@@ -1,11 +1,16 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Zora Intelligence Dashboard',
   description: 'Enhanced ZoraScan with official Zora API SDK',
   keywords: ['zora', 'blockchain', 'dashboard', 'nft', 'crypto'],
   authors: [{ name: 'Zora Intelligence Team' }],
-  viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({
@@ -15,13 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ 
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont',
-        backgroundColor: '#000',
-        color: '#fff',
-        margin: 0,
-        padding: '20px'
-      }}>
+      <body className="font-sans antialiased">
         {children}
       </body>
     </html>

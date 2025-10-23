@@ -1,97 +1,142 @@
 "use client";
 import { useEffect, useState } from "react";
-import FiltersPanel from "./components/FiltersPanel";
+import ZoraVerseTable from "./components/ZoraVerseTable";
+import Loader from "./components/Loader";
 
 export default function Home() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<any>({ minCap: 10000, maxCap: 10000000, sortBy: "marketCap" });
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchProfiles = () => {
-    setLoading(true);
-    fetch("http://localhost:8000/profiles")
-      .then((res) => res.json())
-      .then((data) => {
-        let list = data.profiles || [];
-
-        // фильтрация по Market Cap
-        list = list.filter(
-          (p: any) =>
-            (!p.marketCap || (p.marketCap >= filters.minCap && p.marketCap <= filters.maxCap))
-        );
-
-        // сортировка
-        list.sort((a: any, b: any) => (b[filters.sortBy] || 0) - (a[filters.sortBy] || 0));
-
-        setProfiles(list);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  const fetchProfiles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch("http://localhost:8000/profiles");
+      const data = await response.json();
+      
+      if (data.profiles) {
+        setProfiles(data.profiles);
+      } else {
+        setError("No profiles data received");
+      }
+    } catch (err) {
+      setError("Failed to fetch profiles");
+      console.error("Error fetching profiles:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchProfiles();
-  }, [filters]);
+    const interval = setInterval(fetchProfiles, 60000); // обновление каждые 60 сек
+    return () => clearInterval(interval);
+  }, []);
 
-  if (loading) return <div style={{ color: '#999', padding: '40px', textAlign: 'center' }}>Loading profiles...</div>;
+  const handleFilterChange = (filters: any) => {
+    // This will be handled by the ZoraVerseTable component
+    console.log("Filters changed:", filters);
+  };
+
+  if (loading) return <Loader />;
+
+  if (error) {
+    return (
+      <div style={{ 
+        minHeight: "100vh", 
+        backgroundColor: "#0A0B0F", 
+        color: "white", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center" 
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ color: "#ef4444", fontSize: "20px", marginBottom: "16px" }}>
+            ⚠️ Error Loading Data
+          </div>
+          <p style={{ color: "#A3A3A3", marginBottom: "16px" }}>{error}</p>
+          <button 
+            onClick={fetchProfiles}
+            style={{
+              backgroundColor: "#7C3AED",
+              color: "white",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600"
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>Zora Intelligence Dashboard</h1>
-      <FiltersPanel onFilterChange={setFilters} />
-
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '20px' 
-      }}>
-        {profiles.map((p) => (
-          <div key={p.address} style={{
-            backgroundColor: '#1a1a1a',
-            border: '1px solid #333',
-            borderRadius: '12px',
-            padding: '20px',
-            transition: 'border-color 0.3s'
-          }}>
-            <h2 style={{ 
-              fontSize: '18px', 
-              fontWeight: '600', 
-              marginBottom: '10px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>{p.name || "Unnamed Profile"}</h2>
-            <p style={{ 
-              fontSize: '14px', 
-              color: '#999', 
-              marginBottom: '15px',
-              minHeight: '40px'
-            }}>{p.description || "No description"}</p>
-            <div style={{ fontSize: '14px', marginBottom: '15px' }}>
-              <div>🪙 {p.tokenTicker || "—"}</div>
-              <div>💰 Market Cap: {p.marketCap ? `$${p.marketCap.toLocaleString()}` : "—"}</div>
-              <div>📈 Posts: {p.postsCount || 0}</div>
-              <div>🧾 Holders: {p.holdersCount || 0}</div>
-              <div>👥 Followers: {p.followersCount || 0}</div>
-            </div>
-            <div style={{ display: 'flex', gap: '15px', fontSize: '14px' }}>
-              {p.twitter && (
-                <a href={p.twitter} target="_blank" rel="noreferrer" style={{ color: '#999', textDecoration: 'none' }}>
-                  Twitter
-                </a>
-              )}
-              {p.farcaster && (
-                <a href={p.farcaster} target="_blank" rel="noreferrer" style={{ color: '#999', textDecoration: 'none' }}>
-                  Farcaster
-                </a>
-              )}
-              <a href={p.zoraLink} target="_blank" rel="noreferrer" style={{ color: '#999', textDecoration: 'none' }}>
-                Zora
-              </a>
-            </div>
-          </div>
-        ))}
+    <div style={{ backgroundColor: "#0A0B0F", minHeight: "100vh", color: "white", padding: "24px" }}>
+      {/* Navigation */}
+      <div style={{ marginBottom: "32px", textAlign: "center" }}>
+        <h1 style={{ fontSize: "32px", fontWeight: "600", margin: 0, marginBottom: "8px" }}>
+          <span style={{ color: "#7C3AED" }}>Zora</span> Intelligence Dashboard
+        </h1>
+        <p style={{ color: "#A3A3A3", margin: 0, marginBottom: "24px" }}>
+          Choose your preferred interface
+        </p>
+        <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+          <a
+            href="/"
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#7C3AED",
+              color: "white",
+              textDecoration: "none",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.2s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#6d28d9";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#7C3AED";
+            }}
+          >
+            📊 Table View (Current)
+          </a>
+          <a
+            href="/zoraverse"
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#1E1F25",
+              color: "#A3A3A3",
+              textDecoration: "none",
+              borderRadius: "8px",
+              fontWeight: "600",
+              border: "1px solid #2A2B31",
+              transition: "all 0.2s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#2A2B31";
+              e.currentTarget.style.color = "white";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#1E1F25";
+              e.currentTarget.style.color = "#A3A3A3";
+            }}
+          >
+            🎯 ZoraVerse Dashboard
+          </a>
+        </div>
       </div>
-    </main>
+
+      <ZoraVerseTable 
+        profiles={profiles} 
+        onFilterChange={handleFilterChange}
+      />
+    </div>
   );
 }
